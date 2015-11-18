@@ -17,6 +17,8 @@ package com.gitblit.utils;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -521,6 +523,7 @@ public class JGitUtils {
 				}
 
 				File gitDir = FileKey.resolve(new File(searchFolder, file.getName()), FS.DETECTED);
+				LOGGER.warn("for searchFolder=" + searchFolder + " file.getName()=" + file.getName() + " file.getParentFile()=" + file.getParentFile() + " gitDir=" + gitDir);
 				if (gitDir != null) {
 					if (onlyBare && gitDir.getName().equals(".git")) {
 						continue;
@@ -528,13 +531,24 @@ public class JGitUtils {
 					if (gitDir.equals(file) || gitDir.getParentFile().equals(file)) {
 						// determine repository name relative to base path
 						String repository = FileUtils.getRelativePath(baseFile, file);
+						if (repository == null) {
+							String exactBase = basePath;
+							String exactPath = gitDir.getPath();
+							LOGGER.warn("base=" + exactBase + " path=" + exactPath);
+							if (exactPath.startsWith(exactBase + "/")) {
+								repository = exactPath.substring((int) (exactBase.length() + 1));
+							}
+						}
+						LOGGER.warn("--adding repository: " + repository);
 						list.add(repository);
 					} else if (searchSubfolders && file.canRead()) {
+						LOGGER.warn("--descending into directory1");
 						// look for repositories in subfolders
 						list.addAll(getRepositoryList(basePath, file, onlyBare, searchSubfolders,
 								nextDepth, patterns));
 					}
 				} else if (searchSubfolders && file.canRead()) {
+					LOGGER.warn("--descending into directory2");
 					// look for repositories in subfolders
 					list.addAll(getRepositoryList(basePath, file, onlyBare, searchSubfolders,
 							nextDepth, patterns));
